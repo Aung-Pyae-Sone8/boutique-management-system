@@ -1,13 +1,13 @@
 import { Head, Link } from '@inertiajs/react';
 import { Plus } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { Button } from "../../components/ui/button"
 import {
     Card,
     CardContent,
     CardDescription,
     CardHeader,
     CardTitle,
-} from '@/components/ui/card';
+} from '../../components/ui/card';
 
 type Customer = {
     id: number;
@@ -50,7 +50,7 @@ export default function Customers({ customers }: Props) {
                     </CardHeader>
                     <CardContent>
                         <div className="overflow-x-auto">
-                            <table className="w-full min-w-[760px] text-sm">
+                            <table className="w-full min-w-190 text-sm">
                                 <thead className="border-b text-left text-xs text-muted-foreground">
                                     <tr>
                                         <th className="pb-3 font-medium">Name</th>

@@ -114,8 +114,13 @@
         "jsx": "react-jsx"
     },
     "include": [
-        "resources/js/**/*.ts",
-        "resources/js/**/*.d.ts",
-        "resources/js/**/*.tsx"
+        "resources/js/app.tsx",
+        "resources/js/pages/admin/products.tsx",
+        "resources/js/pages/admin/orders.tsx",
+        "resources/js/pages/customer/home.tsx",
+        "resources/js/components/ui/**/*.tsx",
+        "resources/js/hooks/use-appearance.tsx",
+        "resources/js/lib/**/*.ts",
+        "resources/js/types/**/*.d.ts"
     ]
 }

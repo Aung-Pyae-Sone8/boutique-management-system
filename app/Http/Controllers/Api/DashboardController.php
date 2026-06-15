@@ -1,36 +1,36 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Api;
 
+use App\Http\Controllers\Controller;
 use App\Models\Customer;
 use App\Models\Order;
 use App\Models\Product;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
-use Inertia\Inertia;
-use Inertia\Response;
 
 class DashboardController extends Controller
 {
-    public function __invoke(): Response
+    public function __invoke(): JsonResponse
     {
-        $revenue = (float) Order::query()
-            ->where('payment_status', 'paid')
-            ->sum('total');
+        $orders = Order::query()->count();
 
-        $salesByStatus = Order::query()
-            ->select('status', DB::raw('count(*) as total'))
-            ->groupBy('status')
-            ->pluck('total', 'status');
-
-        return Inertia::render('dashboard', [
+        return response()->json([
             'stats' => [
-                'revenue' => $revenue,
-                'orders' => Order::count(),
-                'products' => Product::count(),
-                'customers' => Customer::count(),
-                'lowStock' => Product::query()->whereColumn('stock_quantity', '<=', 'low_stock_threshold')->count(),
+                'revenue' => (float) Order::query()
+                    ->where('payment_status', 'paid')
+                    ->sum('total'),
+                'orders' => $orders,
+                'products' => Product::query()->count(),
+                'customers' => Customer::query()->count(),
+                'lowStock' => Product::query()
+                    ->whereColumn('stock_quantity', '<=', 'low_stock_threshold')
+                    ->count(),
             ],
-            'salesByStatus' => $salesByStatus,
+            'salesByStatus' => Order::query()
+                ->select('status', DB::raw('count(*) as total'))
+                ->groupBy('status')
+                ->pluck('total', 'status'),
             'recentOrders' => Order::query()
                 ->with('customer')
                 ->latest('ordered_at')

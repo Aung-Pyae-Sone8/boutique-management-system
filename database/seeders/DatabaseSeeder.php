@@ -19,7 +19,10 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        $this->call(AdminUserSeeder::class);
+        $this->call([
+            AdminUserSeeder::class,
+            CustomerUserSeeder::class,
+        ]);
 
         $categories = collect([
             ['name' => 'Dresses', 'description' => 'Occasion-ready midi, maxi, and day dresses.'],
@@ -27,11 +30,13 @@ class DatabaseSeeder extends Seeder
             ['name' => 'Accessories', 'description' => 'Bags, scarves, belts, and finishing touches.'],
             ['name' => 'Outerwear', 'description' => 'Light jackets, cardigans, and statement layers.'],
         ])->mapWithKeys(function (array $category): array {
-            $model = Category::create([
-                ...$category,
-                'slug' => Str::slug($category['name']),
-                'is_active' => true,
-            ]);
+            $model = Category::query()->updateOrCreate(
+                ['slug' => Str::slug($category['name'])],
+                [
+                    ...$category,
+                    'is_active' => true,
+                ],
+            );
 
             return [$model->name => $model];
         });
@@ -44,21 +49,23 @@ class DatabaseSeeder extends Seeder
             ['category' => 'Accessories', 'sku' => 'ACC-008', 'name' => 'Pearl Handle Mini Bag', 'price' => 76, 'cost_price' => 31, 'stock_quantity' => 12, 'low_stock_threshold' => 4, 'size' => null, 'color' => 'Blush', 'is_featured' => true],
             ['category' => 'Outerwear', 'sku' => 'OTW-005', 'name' => 'Cropped Boucle Jacket', 'price' => 148, 'cost_price' => 71, 'stock_quantity' => 7, 'low_stock_threshold' => 5, 'size' => 'M', 'color' => 'Cream', 'is_featured' => true],
         ])->mapWithKeys(function (array $product) use ($categories): array {
-            $model = Product::create([
-                'category_id' => $categories[$product['category']]->id,
-                'sku' => $product['sku'],
-                'name' => $product['name'],
-                'slug' => Str::slug($product['name']),
-                'description' => 'Curated boutique piece selected for everyday styling and seasonal edits.',
-                'price' => $product['price'],
-                'cost_price' => $product['cost_price'],
-                'stock_quantity' => $product['stock_quantity'],
-                'low_stock_threshold' => $product['low_stock_threshold'],
-                'size' => $product['size'],
-                'color' => $product['color'],
-                'is_featured' => $product['is_featured'],
-                'is_active' => true,
-            ]);
+            $model = Product::query()->updateOrCreate(
+                ['sku' => $product['sku']],
+                [
+                    'category_id' => $categories[$product['category']]->id,
+                    'name' => $product['name'],
+                    'slug' => Str::slug($product['name']),
+                    'description' => 'Curated boutique piece selected for everyday styling and seasonal edits.',
+                    'price' => $product['price'],
+                    'cost_price' => $product['cost_price'],
+                    'stock_quantity' => $product['stock_quantity'],
+                    'low_stock_threshold' => $product['low_stock_threshold'],
+                    'size' => $product['size'],
+                    'color' => $product['color'],
+                    'is_featured' => $product['is_featured'],
+                    'is_active' => true,
+                ],
+            );
 
             return [$model->sku => $model];
         });
@@ -68,10 +75,17 @@ class DatabaseSeeder extends Seeder
             ['name' => 'Nora Kim', 'email' => 'nora@example.com', 'phone' => '+95 9 420 100 222', 'city' => 'Mandalay', 'country' => 'Myanmar'],
             ['name' => 'Ella Tan', 'email' => 'ella@example.com', 'phone' => '+95 9 420 100 223', 'city' => 'Naypyidaw', 'country' => 'Myanmar'],
         ])->mapWithKeys(function (array $customer): array {
-            $model = Customer::create($customer);
+            $model = Customer::query()->updateOrCreate(
+                ['email' => $customer['email']],
+                $customer,
+            );
 
             return [$model->name => $model];
         });
+
+        if (Order::query()->exists()) {
+            return;
+        }
 
         $this->createOrder($customers['Maya Chen'], [
             [$products['DRS-001'], 1],
