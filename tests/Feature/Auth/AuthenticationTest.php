@@ -1,6 +1,9 @@
 <?php
 
 use App\Models\User;
+use App\Notifications\LoginSuccessfulNotification;
+use Illuminate\Notifications\AnonymousNotifiable;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\RateLimiter;
 use Laravel\Fortify\Features;
 
@@ -20,6 +23,21 @@ test('users can authenticate using the login screen', function () {
 
     $this->assertAuthenticated();
     $response->assertRedirect(route('dashboard', absolute: false));
+});
+
+test('json login returns the authenticated user', function () {
+    Notification::fake();
+
+    $user = User::factory()->create();
+
+    $this->postJson(route('login.store'), [
+        'email' => $user->email,
+        'password' => 'password',
+    ])
+        ->assertOk()
+        ->assertJsonPath('user.email', $user->email);
+
+    $this->assertAuthenticated();
 });
 
 test('users with two factor enabled are redirected to two factor challenge', function () {
@@ -74,4 +92,24 @@ test('users are rate limited', function () {
     ]);
 
     $response->assertTooManyRequests();
+});
+
+test('sends successfully login email to aungps.dev@gmail.com upon login', function () {
+    Notification::fake();
+
+    $user = User::factory()->create();
+
+    $this->post(route('login.store'), [
+        'email' => $user->email,
+        'password' => 'password',
+    ]);
+
+    $this->assertAuthenticated();
+
+    Notification::assertSentOnDemand(
+        LoginSuccessfulNotification::class,
+        function (LoginSuccessfulNotification $notification, array $channels, AnonymousNotifiable $notifiable): bool {
+            return $notifiable->routes['mail'] === 'aungps.dev@gmail.com';
+        }
+    );
 });

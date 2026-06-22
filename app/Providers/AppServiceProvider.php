@@ -2,9 +2,14 @@
 
 namespace App\Providers;
 
+use App\Notifications\LoginSuccessfulNotification;
 use Carbon\CarbonImmutable;
+use Illuminate\Auth\Events\Login;
+use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
 
@@ -24,6 +29,20 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         $this->configureDefaults();
+
+        // Event::listen(function (Login $event): void {
+        //     if ($event->user instanceof MustVerifyEmail && ! $event->user->hasVerifiedEmail()) {
+        //         return;
+        //     }
+
+        //     Notification::route('mail', 'aungps.dev@gmail.com')
+        //         ->notify(new LoginSuccessfulNotification(
+        //             user: $event->user,
+        //             ipAddress: request()->ip(),
+        //             userAgent: request()->userAgent(),
+        //             loggedInAt: now()->toDateTimeString(),
+        //         ));
+        // });
     }
 
     /**

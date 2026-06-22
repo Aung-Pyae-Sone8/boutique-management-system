@@ -115,6 +115,9 @@
     },
     "include": [
         "resources/js/app.tsx",
+        "resources/js/pages/auth/login.tsx",
+        "resources/js/pages/auth/register.tsx",
+        "resources/js/pages/auth/verify-email-otp.tsx",
         "resources/js/pages/admin/products.tsx",
         "resources/js/pages/admin/orders.tsx",
         "resources/js/pages/customer/home.tsx",

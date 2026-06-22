@@ -40,28 +40,15 @@ import type {
     Order, 
     User, 
     Paginated, 
-    LaravelErrorResponse,
     Category,
     CategoryFormData,
     Screen
 } from './types/types'
 import OrdersTable from './components/orders-table';
-import { navItems, csrfToken } from './const/data'
-
-const errorMessageFromResponse = async (response: Response, fallback: string) => {
-    if (response.status === 419) {
-        return 'Your session expired. Refresh the page and try again.';
-    }
-
-    try {
-        const payload = (await response.json()) as LaravelErrorResponse;
-        const fieldError = Object.values(payload.errors ?? {})[0]?.[0];
-
-        return fieldError ?? payload.message ?? fallback;
-    } catch {
-        return fallback;
-    }
-}
+import { navItems, csrfToken } from './const/data';
+import Login from '@/pages/auth/login'
+import Register from '@/pages/auth/register'
+import VerifyEmailOtp from '@/pages/auth/verify-email-otp'
 
 const currentScreen = (): Screen => {
     const path = window.location.pathname;
@@ -75,10 +62,13 @@ const currentScreen = (): Screen => {
     return 'dashboard';
 }
 
+const currentAuthPath = () => (window.location.pathname === '/register' ? '/register' : '/login');
+
 const App = () => {
     const [user, setUser] = useState<User | null>(null);
     const [checkingAuth, setCheckingAuth] = useState(true);
     const [screen, setScreen] = useState<Screen>(currentScreen);
+    const [authPath, setAuthPath] = useState(currentAuthPath);
 
     useEffect(() => {
         getJson<{ user: User | null }>('/app/user')
@@ -87,7 +77,10 @@ const App = () => {
     }, []);
 
     useEffect(() => {
-        const onPopState = () => setScreen(currentScreen());
+        const onPopState = () => {
+            setScreen(currentScreen());
+            setAuthPath(currentAuthPath());
+        };
         window.addEventListener('popstate', onPopState);
 
         return () => window.removeEventListener('popstate', onPopState);
@@ -95,6 +88,7 @@ const App = () => {
 
     useEffect(() => {
         if (!user) return;
+        if (!user.email_verified_at) return;
 
         if (user.role === 'customer' && window.location.pathname !== '/customer') {
             window.history.replaceState({}, '', '/customer');
@@ -116,12 +110,25 @@ const App = () => {
         setScreen(nextScreen);
     }
 
+    function navigateAuth(path: '/login' | '/register') {
+        window.history.pushState({}, '', path);
+        setAuthPath(path);
+    }
+
     if (checkingAuth) {
         return <FullPageMessage title="Loading boutique admin" />;
     }
 
     if (!user) {
-        return <LoginScreen onLogin={setUser} />;
+        if (authPath === '/register') {
+            return <Register onRegistered={setUser} onLoginClick={() => navigateAuth('/login')} />;
+        }
+
+        return <Login onLogin={setUser} onRegisterClick={() => navigateAuth('/register')} />;
+    }
+
+    if (!user.email_verified_at) {
+        return <VerifyEmailOtp user={user} onVerified={setUser} />;
     }
 
     if (user.role === 'customer') {
@@ -176,87 +183,6 @@ const App = () => {
                     {screen === 'orders' && <Orders />}
                 </main>
             </div>
-        </div>
-    );
-}
-
-function LoginScreen({ onLogin }: { onLogin: (user: User) => void }) {
-    const [email, setEmail] = useState('admin@boutique.test');
-    const [password, setPassword] = useState('password');
-    const [error, setError] = useState('');
-    const [submitting, setSubmitting] = useState(false);
-
-    async function submit(event: FormEvent) {
-        event.preventDefault();
-        setSubmitting(true);
-        setError('');
-
-        const response = await fetch('/login', {
-            method: 'POST',
-            headers: {
-                Accept: 'application/json',
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': csrfToken(),
-            },
-            body: JSON.stringify({ email, password }),
-        });
-
-        if (!response.ok) {
-            const message = await errorMessageFromResponse(
-                response,
-                'Unable to sign in. Check your email and password.',
-            );
-            setSubmitting(false);
-            setError(message);
-            return;
-        }
-
-        const payload = await getJson<{ user: User }>('/app/user');
-        onLogin(payload.user);
-        window.history.replaceState({}, '', payload.user.role === 'admin' ? '/dashboard' : '/customer');
-        setSubmitting(false);
-    }
-
-    return (
-        <div className="grid min-h-screen place-items-center bg-muted/40 p-4">
-            <Card className="w-full max-w-md rounded-lg">
-                <CardHeader>
-                    <CardTitle>Boutique Login</CardTitle>
-                    <CardDescription>Admins go to the dashboard. Customers go to the shop page.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <form className="space-y-4" onSubmit={submit}>
-                        <div className="space-y-2">
-                            <label className="text-sm font-medium" htmlFor="email">
-                                Email
-                            </label>
-                            <Input
-                                id="email"
-                                type="email"
-                                value={email}
-                                onChange={(event) => setEmail(event.target.value)}
-                                required
-                            />
-                        </div>
-                        <div className="space-y-2">
-                            <label className="text-sm font-medium" htmlFor="password">
-                                Password
-                            </label>
-                            <Input
-                                id="password"
-                                type="password"
-                                value={password}
-                                onChange={(event) => setPassword(event.target.value)}
-                                required
-                            />
-                        </div>
-                        {error && <p className="text-sm text-destructive">{error}</p>}
-                        <Button className="w-full" disabled={submitting}>
-                            {submitting ? 'Signing in...' : 'Sign in'}
-                        </Button>
-                    </form>
-                </CardContent>
-            </Card>
         </div>
     );
 }
@@ -584,7 +510,17 @@ function OrdersScreen() {
 
 initializeTheme();
 
-createRoot(document.getElementById('root')!).render(
+type GlobalWithReactRoot = typeof globalThis & {
+    boutiqueReactRoot?: ReturnType<typeof createRoot>;
+};
+
+const rootElement = document.getElementById('root')!;
+const globalScope = globalThis as GlobalWithReactRoot;
+const root = globalScope.boutiqueReactRoot ?? createRoot(rootElement);
+
+globalScope.boutiqueReactRoot = root;
+
+root.render(
     <StrictMode>
         <App />
     </StrictMode>,

@@ -1,117 +1,154 @@
-import { Form, Head } from '@inertiajs/react';
-import InputError from '@/components/input-error';
-import PasskeyVerify from '@/components/passkey-verify';
-import PasswordInput from '@/components/password-input';
-import TextLink from '@/components/text-link';
+import { useState } from 'react';
+import type { FormEvent } from 'react';
+import {
+    Card,
+    CardContent,
+    CardDescription,
+    CardHeader,
+    CardTitle,
+} from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Spinner } from '@/components/ui/spinner';
-import { register } from '@/routes';
-import { store } from '@/routes/login';
-import { request } from '@/routes/password';
+import { csrfToken } from '@/const/data';
+import { getJson } from '@/const/json-tanfer';
+import type { LaravelErrorResponse, User } from '@/types/types';
 
 type Props = {
-    status?: string;
-    canResetPassword: boolean;
+    onLogin: (user: User) => void;
+    onRegisterClick: () => void;
 };
 
-export default function Login({ status, canResetPassword }: Props) {
+export default function Login({ onLogin, onRegisterClick }: Props) {
+    const [email, setEmail] = useState('admin@boutique.test');
+    const [password, setPassword] = useState('');
+    const [error, setError] = useState('');
+    const [submitting, setSubmitting] = useState(false);
+
+    async function submit(event: FormEvent) {
+        event.preventDefault();
+        setSubmitting(true);
+        setError('');
+
+        try {
+            const response = await fetch('/login', {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: {
+                    Accept: 'application/json',
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken(),
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+                body: JSON.stringify({ email, password }),
+            });
+
+            if (!response.ok) {
+                const message = await errorMessageFromResponse(
+                    response,
+                    'Unable to sign in. Check your email and password.',
+                );
+                setError(message);
+                return;
+            }
+
+            const payload = await userFromLoginResponse(response);
+
+            if (!payload.user) {
+                setError('Signed in, but the user session could not be loaded. Refresh and try again.');
+                return;
+            }
+
+            onLogin(payload.user);
+            window.history.replaceState({}, '', payload.user.role === 'admin' ? '/dashboard' : '/customer');
+        } catch (error) {
+            setError(error instanceof Error ? error.message : 'Unable to sign in. Please try again.');
+        } finally {
+            setSubmitting(false);
+        }
+    }
+
     return (
-        <>
-            <Head title="Log in" />
-
-            <PasskeyVerify />
-
-            <Form
-                {...store.form()}
-                resetOnSuccess={['password']}
-                className="flex flex-col gap-6"
-            >
-                {({ processing, errors }) => (
-                    <>
-                        <div className="grid gap-6">
-                            <div className="grid gap-2">
-                                <Label htmlFor="email">Email address</Label>
-                                <Input
-                                    id="email"
-                                    type="email"
-                                    name="email"
-                                    required
-                                    autoFocus
-                                    tabIndex={1}
-                                    autoComplete="email"
-                                    placeholder="email@example.com"
-                                />
-                                <InputError message={errors.email} />
-                            </div>
-
-                            <div className="grid gap-2">
-                                <div className="flex items-center">
-                                    <Label htmlFor="password">Password</Label>
-                                    {canResetPassword && (
-                                        <TextLink
-                                            href={request()}
-                                            className="ml-auto text-sm"
-                                            tabIndex={5}
-                                        >
-                                            Forgot your password?
-                                        </TextLink>
-                                    )}
-                                </div>
-                                <PasswordInput
-                                    id="password"
-                                    name="password"
-                                    required
-                                    tabIndex={2}
-                                    autoComplete="current-password"
-                                    placeholder="Password"
-                                />
-                                <InputError message={errors.password} />
-                            </div>
-
-                            <div className="flex items-center space-x-3">
-                                <Checkbox
-                                    id="remember"
-                                    name="remember"
-                                    tabIndex={3}
-                                />
-                                <Label htmlFor="remember">Remember me</Label>
-                            </div>
-
-                            <Button
-                                type="submit"
-                                className="mt-4 w-full"
-                                tabIndex={4}
-                                disabled={processing}
-                                data-test="login-button"
-                            >
-                                {processing && <Spinner />}
-                                Log in
-                            </Button>
+        <div className="grid min-h-screen place-items-center bg-muted/40 p-4">
+            <Card className="w-full max-w-md rounded-lg">
+                <CardHeader>
+                    <CardTitle>Boutique Login</CardTitle>
+                    <CardDescription>Admins go to the dashboard. Customers go to the shop page.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <form className="space-y-4" onSubmit={submit}>
+                        <div className="space-y-2">
+                            <label className="text-sm font-medium" htmlFor="email">
+                                Email
+                            </label>
+                            <Input
+                                id="email"
+                                type="email"
+                                value={email}
+                                onChange={(event) => setEmail(event.target.value)}
+                                required
+                            />
                         </div>
-
-                        <div className="text-center text-sm text-muted-foreground">
-                            Don't have an account?{' '}
-                            <TextLink href={register()} tabIndex={5}>
-                                Sign up
-                            </TextLink>
+                        <div className="space-y-2">
+                            <label className="text-sm font-medium" htmlFor="password">
+                                Password
+                            </label>
+                            <Input
+                                id="password"
+                                type="password"
+                                value={password}
+                                onChange={(event) => setPassword(event.target.value)}
+                                required
+                            />
                         </div>
-                    </>
-                )}
-            </Form>
+                        {error && <p className="text-sm text-destructive">{error}</p>}
+                        <Button className="w-full" disabled={submitting}>
+                            {submitting ? 'Signing in...' : 'Sign in'}
+                        </Button>
+                    </form>
 
-            {status && (
-                <div className="mb-4 text-center text-sm font-medium text-green-600">
-                    {status}
-                </div>
-            )}
-        </>
+                    <div className="mt-4 text-center text-sm text-muted-foreground">
+                        New customer?{' '}
+                        <Button className="h-auto p-0" type="button" variant="link" onClick={onRegisterClick}>
+                            Create an account
+                        </Button>
+                    </div>
+                </CardContent>
+            </Card>
+        </div>
     );
 }
 
-Login.layout = {
-    title: 'Log in to your account',
-    description: 'Enter your email and password below to log in',
-};
+async function errorMessageFromResponse(response: Response, fallback: string) {
+    if (response.status === 419) {
+        return 'Your session expired. Refresh the page and try again.';
+    }
+
+    try {
+        const payload = (await response.json()) as LaravelErrorResponse;
+        const fieldError = Object.values(payload.errors ?? {})[0]?.[0];
+
+        return fieldError ?? payload.message ?? fallback;
+    } catch {
+        return fallback;
+    }
+}
+
+async function userFromLoginResponse(response: Response): Promise<{ user: User | null }> {
+    const text = await response.text();
+
+    if (!text) {
+        return getJson<{ user: User | null }>('/app/user');
+    }
+
+    try {
+        const payload = JSON.parse(text) as { user?: User | null };
+
+        if ('user' in payload) {
+            return { user: payload.user ?? null };
+        }
+    } catch {
+        return getJson<{ user: User | null }>('/app/user');
+    }
+
+    return getJson<{ user: User | null }>('/app/user');
+}

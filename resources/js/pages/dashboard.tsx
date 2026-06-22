@@ -8,15 +8,15 @@ import {
     ShoppingBag,
     Users,
 } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
+import { Badge } from '../components/ui/badge';
 import {
     Card,
     CardContent,
     CardDescription,
     CardHeader,
     CardTitle,
-} from '@/components/ui/card';
-import { dashboard } from '@/routes';
+} from '../components/ui/card';
+import { dashboard } from '../routes';
 
 type DashboardProps = {
     stats: {
@@ -149,7 +149,7 @@ export default function Dashboard({
                         </CardHeader>
                         <CardContent>
                             <div className="overflow-x-auto">
-                                <table className="w-full min-w-[640px] text-sm">
+                                <table className="w-full min-w-160 text-sm">
                                     <thead className="border-b text-left text-xs text-muted-foreground">
                                         <tr>
                                             <th className="pb-3 font-medium">Order</th>

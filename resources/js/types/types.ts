@@ -51,6 +51,7 @@ export type User = {
     name: string;
     email: string;
     role: 'admin' | 'customer';
+    email_verified_at: string | null;
 };
 
 export type Paginated<T> = {
