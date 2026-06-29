@@ -30,7 +30,8 @@ class DashboardController extends Controller
             'salesByStatus' => Order::query()
                 ->select('status', DB::raw('count(*) as total'))
                 ->groupBy('status')
-                ->pluck('total', 'status'),
+                ->pluck('total', 'status')
+                ->map(fn (mixed $total): int => (int) $total),
             'recentOrders' => Order::query()
                 ->with('customer')
                 ->latest('ordered_at')
@@ -66,7 +67,13 @@ class DashboardController extends Controller
                 ->groupBy('products.id', 'products.name', 'products.sku')
                 ->orderByDesc('sold')
                 ->take(5)
-                ->get(),
+                ->get()
+                ->map(fn (Product $product): array => [
+                    'id' => $product->id,
+                    'name' => $product->name,
+                    'sku' => $product->sku,
+                    'sold' => (int) $product->getAttribute('sold'),
+                ]),
         ]);
     }
 }

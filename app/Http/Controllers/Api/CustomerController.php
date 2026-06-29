@@ -15,7 +15,10 @@ class CustomerController extends Controller
     {
         return CustomerResource::collection(
             Customer::query()
+                ->with('user:id,email_verified_at,created_at')
                 ->withCount('orders')
+                ->withSum('orders', 'total')
+                ->withMax('orders', 'ordered_at')
                 ->latest()
                 ->paginate(15)
         );
@@ -28,14 +31,14 @@ class CustomerController extends Controller
 
     public function show(Customer $customer): CustomerResource
     {
-        return CustomerResource::make($customer->loadCount('orders'));
+        return CustomerResource::make($this->loadDirectoryData($customer));
     }
 
     public function update(Customer $customer): CustomerResource
     {
         $customer->update(request()->validate($this->rules($customer)));
 
-        return CustomerResource::make($customer->loadCount('orders'));
+        return CustomerResource::make($this->loadDirectoryData($customer));
     }
 
     public function destroy(Customer $customer): Response
@@ -58,5 +61,14 @@ class CustomerController extends Controller
             'city' => ['nullable', 'string', 'max:255'],
             'country' => ['nullable', 'string', 'max:255'],
         ];
+    }
+
+    private function loadDirectoryData(Customer $customer): Customer
+    {
+        return $customer
+            ->load('user:id,email_verified_at,created_at')
+            ->loadCount('orders')
+            ->loadSum('orders', 'total')
+            ->loadMax('orders', 'ordered_at');
     }
 }

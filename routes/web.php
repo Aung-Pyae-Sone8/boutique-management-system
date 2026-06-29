@@ -18,6 +18,9 @@ Route::middleware(['auth', 'throttle:6,1'])->group(function (): void {
 Route::middleware(['auth', 'verified'])->group(function (): void {
     Route::view('/dashboard', 'app')->name('dashboard');
     Route::view('/customer', 'app')->name('customer.home');
+    Route::view('/customer/shop', 'app')->name('customer.shop');
+    Route::view('/customer/cart', 'app')->name('customer.cart');
+    Route::view('/customer/products/{product}', 'app')->name('customer.products.show');
     Route::view('/admin/products', 'app')->name('admin.products');
     Route::view('/admin/categories', 'app')->name('admin.categories');
     Route::view('/admin/customers', 'app')->name('admin.customers');

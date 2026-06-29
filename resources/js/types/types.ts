@@ -6,6 +6,11 @@ export type Customer = {
     city: string | null;
     country: string | null;
     orders_count?: number;
+    lifetime_value?: number;
+    last_order_at?: string | null;
+    is_registered: boolean;
+    email_verified?: boolean | null;
+    registered_at?: string | null;
 };
 
 export type Order = {
@@ -65,14 +70,22 @@ export type LaravelErrorResponse = {
 
 export type Category = {
     id: number;
+    parent_id: number | null;
+    parent?: {
+        id: number;
+        name: string;
+        slug: string;
+    } | null;
     name: string;
     slug: string;
     description: string | null;
     products_count?: number;
+    children_count?: number;
     is_active: boolean;
 };
 
 export type CategoryFormData = {
+    parent_id: string;
     name: string;
     slug: string;
     description: string;
@@ -94,9 +107,33 @@ export type Product = {
     size: string | null;
     color: string | null;
     image_url: string | null;
+    images: ProductImage[];
+    variants: ProductVariant[];
     is_active: boolean;
     is_featured: boolean;
     is_low_stock: boolean;
+};
+
+export type ProductVariant = {
+    id: number;
+    sku: string;
+    size: string | null;
+    color: string | null;
+    price: number;
+    cost_price: number;
+    stock_quantity: number;
+    low_stock_threshold: number;
+    is_active: boolean;
+    is_low_stock: boolean;
+    images: ProductImage[];
+};
+
+export type ProductImage = {
+    id: number;
+    product_variant_id: number | null;
+    url: string;
+    original_name: string | null;
+    sort_order: number;
 };
 
 export type ProductFormData = {
@@ -111,9 +148,17 @@ export type ProductFormData = {
     low_stock_threshold: string;
     size: string;
     color: string;
-    image_url: string;
     is_featured: boolean;
     is_active: boolean;
 };
 
-export type Screen = 'dashboard' | 'products' | 'categories' | 'customers' | 'orders' | 'customer';
+export type Screen =
+    | 'dashboard'
+    | 'products'
+    | 'categories'
+    | 'customers'
+    | 'orders'
+    | 'customer'
+    | 'customerShop'
+    | 'customerCart'
+    | 'customerProductDetail';

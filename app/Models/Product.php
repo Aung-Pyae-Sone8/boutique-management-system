@@ -46,6 +46,22 @@ class Product extends Model
         return $this->hasMany(OrderItem::class);
     }
 
+    /**
+     * @return HasMany<ProductImage, $this>
+     */
+    public function images(): HasMany
+    {
+        return $this->hasMany(ProductImage::class)->orderBy('sort_order');
+    }
+
+    /**
+     * @return HasMany<ProductVariant, $this>
+     */
+    public function variants(): HasMany
+    {
+        return $this->hasMany(ProductVariant::class)->orderBy('id');
+    }
+
     public function isLowStock(): bool
     {
         return $this->stock_quantity <= $this->low_stock_threshold;

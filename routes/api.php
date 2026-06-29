@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\CartStockController;
 use App\Http\Controllers\Api\CategoryController;
 use App\Http\Controllers\Api\CustomerController;
 use App\Http\Controllers\Api\DashboardController;
@@ -9,6 +10,8 @@ use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->name('api.v1.')->group(function (): void {
     Route::get('dashboard', DashboardController::class)->name('dashboard');
+    Route::post('cart/stock', [CartStockController::class, 'store'])->name('cart.stock.store');
+    Route::patch('cart/stock', [CartStockController::class, 'update'])->name('cart.stock.update');
     Route::apiResource('categories', CategoryController::class);
     Route::apiResource('products', ProductController::class);
     Route::apiResource('customers', CustomerController::class);
