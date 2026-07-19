@@ -13,6 +13,8 @@ type Props = {
     onProductClick: (productId: number) => void;
     onHomeClick: () => void;
     onCartClick: () => void;
+    onOrdersClick: () => void;
+    onMessagesClick: () => void;
     onLogout: () => void;
 };
 
@@ -22,6 +24,8 @@ export default function CustomerShop({
     onProductClick,
     onHomeClick,
     onCartClick,
+    onOrdersClick,
+    onMessagesClick,
     onLogout,
 }: Props) {
     const [products, setProducts] = useState<Product[]>([]);
@@ -91,6 +95,8 @@ export default function CustomerShop({
                 onHomeClick={onHomeClick}
                 onShopClick={() => undefined}
                 onCartClick={onCartClick}
+                onOrdersClick={onOrdersClick}
+                onMessagesClick={onMessagesClick}
                 onLogout={onLogout}
             />
 
@@ -104,10 +110,10 @@ export default function CustomerShop({
                             <h1 className="font-headline-md text-4xl leading-tight tracking-normal text-customer-primary md:text-6xl">
                                 Shop Products
                             </h1>
-                            <p className="mt-4 max-w-2xl text-base leading-7 text-customer-secondary">
+                            {/* <p className="mt-4 max-w-2xl text-base leading-7 text-customer-secondary">
                                 Browse active products loaded directly from the
                                 Laravel products API.
-                            </p>
+                            </p> */}
                         </div>
                         <div className="flex w-full flex-col gap-3 sm:flex-row md:w-auto">
                             <label className="relative sm:w-56">

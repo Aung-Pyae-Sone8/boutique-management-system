@@ -39,3 +39,17 @@ test('parent category product filter includes products from its subcategories', 
         ->assertJsonPath('meta.total', 1)
         ->assertJsonPath('data.0.id', $product->id);
 });
+
+test('parent category total products count includes products from subcategories', function () {
+    $parent = Category::factory()->create(['name' => 'Boys']);
+    $subcategory = Category::factory()->for($parent, 'parent')->create([
+        'name' => 'Boys Uniforms',
+    ]);
+    Product::factory()->for($subcategory)->count(2)->create();
+
+    $this->getJson(route('api.v1.categories.index'))
+        ->assertSuccessful()
+        ->assertJsonPath('data.0.id', $parent->id)
+        ->assertJsonPath('data.0.products_count', 0)
+        ->assertJsonPath('data.0.total_products_count', 2);
+});

@@ -15,7 +15,7 @@ class CustomerController extends Controller
     {
         return CustomerResource::collection(
             Customer::query()
-                ->with('user:id,email_verified_at,created_at')
+                ->with('user:id,role,email_verified_at,created_at')
                 ->withCount('orders')
                 ->withSum('orders', 'total')
                 ->withMax('orders', 'ordered_at')
@@ -36,7 +36,15 @@ class CustomerController extends Controller
 
     public function update(Customer $customer): CustomerResource
     {
-        $customer->update(request()->validate($this->rules($customer)));
+        $data = request()->validate($this->rules($customer));
+        $role = $data['role'] ?? null;
+        unset($data['role']);
+
+        $customer->update($data);
+
+        if ($role && $customer->user) {
+            $customer->user->update(['role' => $role]);
+        }
 
         return CustomerResource::make($this->loadDirectoryData($customer));
     }
@@ -54,19 +62,23 @@ class CustomerController extends Controller
     private function rules(?Customer $customer = null): array
     {
         return [
+            'first_name' => ['nullable', 'string', 'max:100'],
+            'last_name' => ['nullable', 'string', 'max:100'],
             'name' => ['required', 'string', 'max:255'],
             'email' => ['nullable', 'email', 'max:255', Rule::unique('customers', 'email')->ignore($customer)],
             'phone' => ['nullable', 'string', 'max:50'],
             'address' => ['nullable', 'string'],
+            'gender' => ['nullable', Rule::in(['male', 'female', 'other', 'prefer_not_to_say'])],
             'city' => ['nullable', 'string', 'max:255'],
             'country' => ['nullable', 'string', 'max:255'],
+            'role' => ['sometimes', Rule::in(['admin', 'customer'])],
         ];
     }
 
     private function loadDirectoryData(Customer $customer): Customer
     {
         return $customer
-            ->load('user:id,email_verified_at,created_at')
+            ->load('user:id,role,email_verified_at,created_at')
             ->loadCount('orders')
             ->loadSum('orders', 'total')
             ->loadMax('orders', 'ordered_at');

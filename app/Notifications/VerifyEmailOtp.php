@@ -4,10 +4,11 @@ namespace App\Notifications;
 
 use Carbon\CarbonInterface;
 use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
-class VerifyEmailOtp extends Notification
+class VerifyEmailOtp extends Notification implements ShouldQueue
 {
     use Queueable;
 
@@ -17,7 +18,9 @@ class VerifyEmailOtp extends Notification
     public function __construct(
         public string $code,
         public CarbonInterface $expiresAt,
-    ) {}
+    ) {
+        $this->afterCommit();
+    }
 
     /**
      * Get the notification's delivery channels.

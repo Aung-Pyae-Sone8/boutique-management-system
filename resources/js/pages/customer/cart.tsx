@@ -19,6 +19,9 @@ type Props = {
     onHomeClick: () => void;
     onShopClick: () => void;
     onCartClick: () => void;
+    onCheckoutClick: () => void;
+    onOrdersClick: () => void;
+    onMessagesClick: () => void;
     onLogout: () => void;
 };
 
@@ -28,6 +31,9 @@ export default function CustomerCart({
     onHomeClick,
     onShopClick,
     onCartClick,
+    onCheckoutClick,
+    onOrdersClick,
+    onMessagesClick,
     onLogout,
 }: Props) {
     const [items, setItems] = useState<CustomerCartItem[]>([]);
@@ -106,6 +112,8 @@ export default function CustomerCart({
                 onHomeClick={onHomeClick}
                 onShopClick={onShopClick}
                 onCartClick={onCartClick}
+                onOrdersClick={onOrdersClick}
+                onMessagesClick={onMessagesClick}
                 onLogout={onLogout}
             />
 
@@ -265,7 +273,11 @@ export default function CustomerCart({
                         <span>Total</span>
                         <span>{money.format(total)}</span>
                     </div>
-                    <Button className="mt-6 h-12 w-full" disabled>
+                    <Button
+                        className="mt-6 h-12 w-full"
+                        disabled={items.length === 0 || updatingStock}
+                        onClick={onCheckoutClick}
+                    >
                         Checkout
                     </Button>
                 </aside>

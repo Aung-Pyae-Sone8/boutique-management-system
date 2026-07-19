@@ -23,8 +23,13 @@ class RegisteredCustomerSeeder extends Seeder
 
                 $customer->fill([
                     'user_id' => $user->id,
+                    'first_name' => $user->first_name ?? $customer->first_name,
+                    'last_name' => $user->last_name ?? $customer->last_name,
                     'name' => $user->name,
                     'email' => $user->email,
+                    'phone' => $user->phone ?? $customer->phone,
+                    'address' => $user->address ?? $customer->address,
+                    'gender' => $user->gender ?? $customer->gender,
                 ])->save();
             });
     }

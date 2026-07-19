@@ -8,8 +8,9 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
-#[Fillable(['user_id', 'name', 'email', 'phone', 'address', 'city', 'country'])]
+#[Fillable(['user_id', 'first_name', 'last_name', 'name', 'email', 'phone', 'address', 'gender', 'city', 'country', 'profile_photo_path'])]
 class Customer extends Model
 {
     /** @use HasFactory<CustomerFactory> */
@@ -29,5 +30,21 @@ class Customer extends Model
     public function orders(): HasMany
     {
         return $this->hasMany(Order::class);
+    }
+
+    /**
+     * @return HasMany<ChatThread, $this>
+     */
+    public function chatThreads(): HasMany
+    {
+        return $this->hasMany(ChatThread::class);
+    }
+
+    /**
+     * @return HasOne<ChatThread, $this>
+     */
+    public function chatThread(): HasOne
+    {
+        return $this->hasOne(ChatThread::class);
     }
 }

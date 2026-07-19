@@ -2,23 +2,43 @@ import {
     ArrowLeft,
     Home,
     LogOut,
+    MessageSquareText,
+    ReceiptText,
     Search,
     ShoppingBag,
-    UserRound,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import type { User } from '@/types/types';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import useApi from '@/hooks/use-api';
+import type { Customer, User } from '@/types/types';
 import { csrfToken } from '@/const/data';
+import { profile as appProfile } from '@/routes/app';
+import { profile as customerProfile } from '@/routes/customer';
 
 type Props = {
     user: User;
-    active: 'home' | 'shop' | 'detail' | 'cart';
+    active:
+        | 'home'
+        | 'shop'
+        | 'detail'
+        | 'cart'
+        | 'orders'
+        | 'messages'
+        | 'profile';
     cartCount?: number;
     onHomeClick: () => void;
     onShopClick: () => void;
     onCartClick: () => void;
+    onOrdersClick: () => void;
+    onMessagesClick: () => void;
     onLogout: () => void;
     backLabel?: string;
+    profilePhotoUrl?: string | null;
+};
+
+type ProfilePayload = {
+    user: User;
+    customer: Customer | null;
 };
 
 export default function CustomerNavbar({
@@ -28,9 +48,16 @@ export default function CustomerNavbar({
     onHomeClick,
     onShopClick,
     onCartClick,
+    onOrdersClick,
+    onMessagesClick,
     onLogout,
     backLabel = 'Shop',
+    profilePhotoUrl,
 }: Props) {
+    const { data } = useApi<ProfilePayload>(appProfile.url());
+    const navbarPhotoUrl =
+        profilePhotoUrl ?? data?.customer?.profile_photo_url ?? null;
+
     async function logout() {
         await fetch('/logout', {
             method: 'POST',
@@ -80,23 +107,36 @@ export default function CustomerNavbar({
                         >
                             Shop
                         </button>
-                        <span className="text-label-caps font-label-caps text-customer-secondary">
-                            Essentials
-                        </span>
-                        <span className="text-label-caps font-label-caps text-customer-secondary">
+                        <button
+                            type="button"
+                            onClick={onOrdersClick}
+                            className={navClass(active === 'orders')}
+                        >
+                            <ReceiptText className="size-4" />
+                            Orders
+                        </button>
+                        <button
+                            type="button"
+                            onClick={onMessagesClick}
+                            className={navClass(active === 'messages')}
+                        >
+                            <MessageSquareText className="size-4" />
+                            Messages
+                        </button>
+                        {/* <span className="text-label-caps font-label-caps text-customer-secondary">
                             Journal
-                        </span>
+                        </span> */}
                     </nav>
                 )}
             </div>
 
             <div className="flex items-center gap-4">
-                <button
+                {/* <button
                     type="button"
                     className="hidden cursor-pointer text-customer-primary transition-opacity hover:opacity-70 sm:block"
                 >
                     <Search className="size-5" />
-                </button>
+                </button> */}
                 <button
                     type="button"
                     onClick={onCartClick}
@@ -111,10 +151,32 @@ export default function CustomerNavbar({
                         </span>
                     )}
                 </button>
-                <span className="hidden items-center gap-2 text-sm text-customer-secondary lg:flex">
-                    <UserRound className="size-4" />
-                    {user.email}
-                </span>
+                <button
+                    type="button"
+                    title="View profile"
+                    aria-label={`View ${user.name}'s profile`}
+                    onClick={() =>
+                        window.location.assign(customerProfile.url())
+                    }
+                    className={`rounded-full transition-opacity outline-none hover:opacity-75 focus-visible:ring-2 focus-visible:ring-customer-primary focus-visible:ring-offset-2 ${
+                        active === 'profile'
+                            ? 'ring-2 ring-customer-primary ring-offset-2'
+                            : ''
+                    }`}
+                >
+                    <Avatar className="size-9 border border-customer-outline-variant/40 bg-customer-primary">
+                        {navbarPhotoUrl && (
+                            <AvatarImage
+                                src={navbarPhotoUrl}
+                                alt={`${user.name}'s profile photo`}
+                                className="object-cover"
+                            />
+                        )}
+                        <AvatarFallback className="bg-customer-primary text-xs font-semibold text-customer-surface">
+                            {userInitials(user)}
+                        </AvatarFallback>
+                    </Avatar>
+                </button>
                 <Button variant="outline" onClick={logout}>
                     <LogOut className="size-4" />
                     Logout
@@ -122,6 +184,19 @@ export default function CustomerNavbar({
             </div>
         </header>
     );
+}
+
+function userInitials(user: User): string {
+    const parts = [user.first_name, user.last_name].filter(Boolean);
+
+    if (parts.length === 0) {
+        parts.push(...user.name.split(' '));
+    }
+
+    return parts
+        .slice(0, 2)
+        .map((part) => part?.charAt(0).toUpperCase())
+        .join('');
 }
 
 function navClass(isActive: boolean): string {

@@ -24,6 +24,7 @@ class DatabaseSeeder extends Seeder
             AdminUserSeeder::class,
             CustomerUserSeeder::class,
             RegisteredCustomerSeeder::class,
+            PaymentMethodSeeder::class,
             CategoryHierarchySeeder::class,
             CategoryProductSeeder::class,
         ]);

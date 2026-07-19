@@ -1,14 +1,20 @@
 export type Customer = {
     id: number;
+    first_name?: string | null;
+    last_name?: string | null;
     name: string;
     email: string | null;
     phone: string | null;
+    address?: string | null;
+    gender?: 'male' | 'female' | 'other' | 'prefer_not_to_say' | null;
     city: string | null;
     country: string | null;
+    profile_photo_url?: string | null;
     orders_count?: number;
     lifetime_value?: number;
     last_order_at?: string | null;
     is_registered: boolean;
+    role?: 'admin' | 'customer' | null;
     email_verified?: boolean | null;
     registered_at?: string | null;
 };
@@ -17,12 +23,84 @@ export type Order = {
     id: number;
     order_number: string;
     customer?: string | Customer | null;
+    shipping_name?: string | null;
+    shipping_email?: string | null;
+    shipping_phone?: string | null;
+    shipping_address?: string | null;
+    shipping_city?: string | null;
+    shipping_country?: string | null;
     status: string;
     payment_status: string;
+    payment_method?: string | null;
     total: number;
     subtotal?: number;
+    discount?: number;
+    tax?: number;
+    shipping_fee?: number;
     ordered_at: string | null;
-    items?: Array<{ quantity: number }>;
+    items?: OrderItem[];
+    payment?: {
+        id: number;
+        method: string;
+        provider: string | null;
+        transaction_id: string | null;
+        amount: number;
+        currency: string;
+        status: string;
+        paid_at: string | null;
+    } | null;
+};
+
+export type OrderItem = {
+    id: number;
+    product_id: number;
+    product_name: string;
+    sku: string;
+    quantity: number;
+    unit_price: number;
+    line_total: number;
+};
+
+export type ChatMessage = {
+    id: number;
+    chat_thread_id: number;
+    sender_id: number;
+    sender_role: 'customer' | 'admin';
+    sender_name: string | null;
+    message: string;
+    read_at: string | null;
+    created_at: string | null;
+    updated_at: string | null;
+};
+
+export type ChatThread = {
+    id: number;
+    customer_id: number;
+    customer?: Customer | null;
+    subject: string | null;
+    status: 'open' | 'closed';
+    customer_unread_count: number;
+    admin_unread_count: number;
+    last_message_at: string | null;
+    messages_count?: number;
+    messages?: ChatMessage[];
+    created_at: string | null;
+    updated_at: string | null;
+};
+
+export type PaymentMethod = {
+    id: number;
+    key: string;
+    code: string;
+    label: string;
+    provider: string | null;
+    account_username: string | null;
+    account_phone: string | null;
+    qr_url: string | null;
+    is_active: boolean;
+    sort_order: number;
+    created_at?: string | null;
+    updated_at?: string | null;
 };
 
 export type DashboardData = {
@@ -54,7 +132,12 @@ export type DashboardData = {
 export type User = {
     id: number;
     name: string;
+    first_name?: string | null;
+    last_name?: string | null;
     email: string;
+    phone?: string | null;
+    address?: string | null;
+    gender?: 'male' | 'female' | 'other' | 'prefer_not_to_say' | null;
     role: 'admin' | 'customer';
     email_verified_at: string | null;
 };
@@ -80,6 +163,7 @@ export type Category = {
     slug: string;
     description: string | null;
     products_count?: number;
+    total_products_count?: number;
     children_count?: number;
     is_active: boolean;
 };
@@ -158,7 +242,14 @@ export type Screen =
     | 'categories'
     | 'customers'
     | 'orders'
+    | 'paymentMethods'
     | 'customer'
     | 'customerShop'
     | 'customerCart'
-    | 'customerProductDetail';
+    | 'customerCheckout'
+    | 'customerMessages'
+    | 'customerOrders'
+    | 'customerOrderDetail'
+    | 'customerProfile'
+    | 'customerProductDetail'
+    | 'adminMessages';

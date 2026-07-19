@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 
 #[Fillable(['parent_id', 'name', 'slug', 'description', 'is_active'])]
 class Category extends Model
@@ -37,6 +38,21 @@ class Category extends Model
     public function products(): HasMany
     {
         return $this->hasMany(Product::class);
+    }
+
+    /**
+     * @return HasManyThrough<Product, Category, $this>
+     */
+    public function childrenProducts(): HasManyThrough
+    {
+        return $this->hasManyThrough(
+            Product::class,
+            self::class,
+            'parent_id',
+            'category_id',
+            'id',
+            'id',
+        );
     }
 
     /**

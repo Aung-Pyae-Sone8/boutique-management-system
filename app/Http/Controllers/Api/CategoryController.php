@@ -18,7 +18,7 @@ class CategoryController extends Controller
         return CategoryResource::collection(
             Category::query()
                 ->with('parent')
-                ->withCount(['products', 'children'])
+                ->withCount(['products', 'children', 'childrenProducts'])
                 ->orderBy('parent_id')
                 ->orderBy('name')
                 ->paginate(max(1, min($request->integer('per_page', 50), 100)))
@@ -80,6 +80,6 @@ class CategoryController extends Controller
 
     private function loadDirectoryData(Category $category): Category
     {
-        return $category->load('parent')->loadCount(['products', 'children']);
+        return $category->load('parent')->loadCount(['products', 'children', 'childrenProducts']);
     }
 }

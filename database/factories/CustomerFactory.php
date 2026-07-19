@@ -17,11 +17,17 @@ class CustomerFactory extends Factory
      */
     public function definition(): array
     {
+        $firstName = fake()->firstName();
+        $lastName = fake()->lastName();
+
         return [
-            'name' => fake()->name(),
+            'first_name' => $firstName,
+            'last_name' => $lastName,
+            'name' => "{$firstName} {$lastName}",
             'email' => fake()->unique()->safeEmail(),
             'phone' => fake()->phoneNumber(),
             'address' => fake()->streetAddress(),
+            'gender' => fake()->randomElement(['male', 'female', 'other', 'prefer_not_to_say']),
             'city' => fake()->city(),
             'country' => fake()->country(),
         ];

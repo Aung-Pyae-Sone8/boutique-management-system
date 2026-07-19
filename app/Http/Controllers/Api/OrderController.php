@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Resources\OrderResource;
 use App\Models\Order;
 use App\Models\Product;
+use App\Notifications\OrderStatusUpdatedNotification;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Http\Response;
@@ -111,7 +112,20 @@ class OrderController extends Controller
             'notes' => ['nullable', 'string'],
         ]);
 
+        $previousStatus = $order->status;
+        $previousPaymentStatus = $order->payment_status;
+
         $order->update($data);
+
+        if ($order->wasChanged(['status', 'payment_status'])) {
+            $user = $order->loadMissing('customer.user')->customer?->user;
+
+            $user?->notify(new OrderStatusUpdatedNotification(
+                order: $order,
+                previousStatus: $previousStatus,
+                previousPaymentStatus: $previousPaymentStatus,
+            ));
+        }
 
         return OrderResource::make($order->load(['customer', 'items']));
     }

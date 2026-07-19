@@ -11,6 +11,7 @@ import {
     Trash2,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import {
     Card,
@@ -29,11 +30,18 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { initializeTheme } from '@/hooks/use-appearance';
+import AdminMessages from '@/pages/admin/messages';
 import Products from '@/pages/admin/products';
 import Orders from '@/pages/admin/orders';
+import PaymentMethods from '@/pages/admin/payment-methods';
 import CustomerCart from '@/pages/customer/cart';
+import CustomerCheckout from '@/pages/customer/checkout';
 import CustomerHome from '@/pages/customer/home';
+import CustomerMessages from '@/pages/customer/messages';
+import CustomerOrderDetail from '@/pages/customer/order-detail';
+import CustomerOrders from '@/pages/customer/orders';
 import CustomerProductDetail from '@/pages/customer/product-detail';
+import CustomerProfile from '@/pages/customer/profile';
 import CustomerShop from '@/pages/customer/shop';
 import { cartItemCount, customerCartChangedEvent } from '@/lib/customer-cart';
 import { categoryDisplayName } from '@/lib/category';
@@ -56,7 +64,20 @@ import { navItems, csrfToken, money } from './const/data';
 import Login from '@/pages/auth/login';
 import Register from '@/pages/auth/register';
 import VerifyEmailOtp from '@/pages/auth/verify-email-otp';
-import { index as customersIndex } from '@/routes/api/v1/customers';
+import {
+    cart as customerCart,
+    checkout as customerCheckout,
+    home as customerHome,
+    messages as customerMessages,
+    orders as customerOrders,
+    profile as customerProfile,
+    shop as customerShop,
+} from '@/routes/customer';
+import { show as customerOrderShow } from '@/routes/customer/orders';
+import {
+    index as customersIndex,
+    update as updateCustomerRoute,
+} from '@/routes/api/v1/customers';
 import {
     destroy as destroyCategoryRoute,
     index as categoriesIndex,
@@ -68,6 +89,11 @@ const currentScreen = (): Screen => {
     const path = window.location.pathname;
 
     if (path.includes('/customer/products/')) return 'customerProductDetail';
+    if (path.includes('/customer/orders/')) return 'customerOrderDetail';
+    if (path.includes('/customer/profile')) return 'customerProfile';
+    if (path.includes('/customer/messages')) return 'customerMessages';
+    if (path.includes('/customer/orders')) return 'customerOrders';
+    if (path.includes('/customer/checkout')) return 'customerCheckout';
     if (path.includes('/customer/cart')) return 'customerCart';
     if (path.includes('/customer/shop')) return 'customerShop';
     if (path.includes('/customer')) return 'customer';
@@ -75,6 +101,8 @@ const currentScreen = (): Screen => {
     if (path.includes('/admin/categories')) return 'categories';
     if (path.includes('/admin/customers')) return 'customers';
     if (path.includes('/admin/orders')) return 'orders';
+    if (path.includes('/admin/payment-methods')) return 'paymentMethods';
+    if (path.includes('/admin/messages')) return 'adminMessages';
 
     return 'dashboard';
 };
@@ -90,6 +118,12 @@ const currentCustomerProductId = (): number | null => {
     return match ? Number(match[1]) : null;
 };
 
+const currentCustomerOrderId = (): number | null => {
+    const match = window.location.pathname.match(/^\/customer\/orders\/(\d+)/);
+
+    return match ? Number(match[1]) : null;
+};
+
 const App = () => {
     const [user, setUser] = useState<User | null>(null);
     const [checkingAuth, setCheckingAuth] = useState(true);
@@ -97,6 +131,9 @@ const App = () => {
     const [authPath, setAuthPath] = useState(currentAuthPath);
     const [customerProductId, setCustomerProductId] = useState<number | null>(
         currentCustomerProductId,
+    );
+    const [customerOrderId, setCustomerOrderId] = useState<number | null>(
+        currentCustomerOrderId,
     );
     const [customerCartCount, setCustomerCartCount] = useState(cartItemCount);
 
@@ -111,6 +148,7 @@ const App = () => {
             setScreen(currentScreen());
             setAuthPath(currentAuthPath());
             setCustomerProductId(currentCustomerProductId());
+            setCustomerOrderId(currentCustomerOrderId());
         };
         window.addEventListener('popstate', onPopState);
 
@@ -168,25 +206,43 @@ const App = () => {
     }
 
     function navigateCustomer(
-        nextScreen: 'customer' | 'customerShop' | 'customerCart',
+        nextScreen:
+            | 'customer'
+            | 'customerShop'
+            | 'customerCart'
+            | 'customerCheckout'
+            | 'customerMessages'
+            | 'customerOrders'
+            | 'customerProfile',
     ) {
-        window.history.pushState(
-            {},
-            '',
-            nextScreen === 'customerShop'
-                ? '/customer/shop'
-                : nextScreen === 'customerCart'
-                  ? '/customer/cart'
-                  : '/customer',
-        );
+        const path = {
+            customer: customerHome.url(),
+            customerShop: customerShop.url(),
+            customerCart: customerCart.url(),
+            customerCheckout: customerCheckout.url(),
+            customerMessages: customerMessages.url(),
+            customerOrders: customerOrders.url(),
+            customerProfile: customerProfile.url(),
+        }[nextScreen];
+
+        window.history.pushState({}, '', path);
         setCustomerProductId(null);
+        setCustomerOrderId(null);
         setScreen(nextScreen);
     }
 
     function navigateCustomerProduct(productId: number) {
         window.history.pushState({}, '', `/customer/products/${productId}`);
         setCustomerProductId(productId);
+        setCustomerOrderId(null);
         setScreen('customerProductDetail');
+    }
+
+    function navigateCustomerOrder(orderId: number) {
+        window.history.pushState({}, '', customerOrderShow.url(orderId));
+        setCustomerProductId(null);
+        setCustomerOrderId(orderId);
+        setScreen('customerOrderDetail');
     }
 
     if (checkingAuth) {
@@ -216,6 +272,97 @@ const App = () => {
     }
 
     if (user.role === 'customer') {
+        if (screen === 'customerProfile') {
+            return (
+                <CustomerProfile
+                    user={user}
+                    cartCount={customerCartCount}
+                    onHomeClick={() => navigateCustomer('customer')}
+                    onShopClick={() => navigateCustomer('customerShop')}
+                    onCartClick={() => navigateCustomer('customerCart')}
+                    onOrdersClick={() => navigateCustomer('customerOrders')}
+                    onMessagesClick={() => navigateCustomer('customerMessages')}
+                    onLogout={() => setUser(null)}
+                    onUserUpdated={setUser}
+                />
+            );
+        }
+
+        if (screen === 'customerMessages') {
+            return (
+                <CustomerMessages
+                    user={user}
+                    cartCount={customerCartCount}
+                    onHomeClick={() => navigateCustomer('customer')}
+                    onShopClick={() => navigateCustomer('customerShop')}
+                    onCartClick={() => navigateCustomer('customerCart')}
+                    onOrdersClick={() => navigateCustomer('customerOrders')}
+                    onMessagesClick={() => navigateCustomer('customerMessages')}
+                    onLogout={() => setUser(null)}
+                />
+            );
+        }
+
+        if (screen === 'customerOrders') {
+            return (
+                <CustomerOrders
+                    user={user}
+                    cartCount={customerCartCount}
+                    onOrderClick={navigateCustomerOrder}
+                    onHomeClick={() => navigateCustomer('customer')}
+                    onShopClick={() => navigateCustomer('customerShop')}
+                    onCartClick={() => navigateCustomer('customerCart')}
+                    onOrdersClick={() => navigateCustomer('customerOrders')}
+                    onMessagesClick={() => navigateCustomer('customerMessages')}
+                    onLogout={() => setUser(null)}
+                />
+            );
+        }
+
+        if (screen === 'customerOrderDetail') {
+            return customerOrderId ? (
+                <CustomerOrderDetail
+                    key={customerOrderId}
+                    orderId={customerOrderId}
+                    user={user}
+                    cartCount={customerCartCount}
+                    onHomeClick={() => navigateCustomer('customer')}
+                    onShopClick={() => navigateCustomer('customerShop')}
+                    onCartClick={() => navigateCustomer('customerCart')}
+                    onOrdersClick={() => navigateCustomer('customerOrders')}
+                    onMessagesClick={() => navigateCustomer('customerMessages')}
+                    onLogout={() => setUser(null)}
+                />
+            ) : (
+                <CustomerOrders
+                    user={user}
+                    cartCount={customerCartCount}
+                    onOrderClick={navigateCustomerOrder}
+                    onHomeClick={() => navigateCustomer('customer')}
+                    onShopClick={() => navigateCustomer('customerShop')}
+                    onCartClick={() => navigateCustomer('customerCart')}
+                    onOrdersClick={() => navigateCustomer('customerOrders')}
+                    onMessagesClick={() => navigateCustomer('customerMessages')}
+                    onLogout={() => setUser(null)}
+                />
+            );
+        }
+
+        if (screen === 'customerCheckout') {
+            return (
+                <CustomerCheckout
+                    user={user}
+                    cartCount={customerCartCount}
+                    onHomeClick={() => navigateCustomer('customer')}
+                    onShopClick={() => navigateCustomer('customerShop')}
+                    onCartClick={() => navigateCustomer('customerCart')}
+                    onOrdersClick={() => navigateCustomer('customerOrders')}
+                    onMessagesClick={() => navigateCustomer('customerMessages')}
+                    onLogout={() => setUser(null)}
+                />
+            );
+        }
+
         if (screen === 'customerProductDetail') {
             return customerProductId ? (
                 <CustomerProductDetail
@@ -225,6 +372,8 @@ const App = () => {
                     cartCount={customerCartCount}
                     onBackClick={() => navigateCustomer('customerShop')}
                     onCartClick={() => navigateCustomer('customerCart')}
+                    onOrdersClick={() => navigateCustomer('customerOrders')}
+                    onMessagesClick={() => navigateCustomer('customerMessages')}
                     onLogout={() => setUser(null)}
                 />
             ) : (
@@ -234,6 +383,8 @@ const App = () => {
                     onProductClick={navigateCustomerProduct}
                     onHomeClick={() => navigateCustomer('customer')}
                     onCartClick={() => navigateCustomer('customerCart')}
+                    onOrdersClick={() => navigateCustomer('customerOrders')}
+                    onMessagesClick={() => navigateCustomer('customerMessages')}
                     onLogout={() => setUser(null)}
                 />
             );
@@ -247,6 +398,9 @@ const App = () => {
                     onHomeClick={() => navigateCustomer('customer')}
                     onShopClick={() => navigateCustomer('customerShop')}
                     onCartClick={() => navigateCustomer('customerCart')}
+                    onCheckoutClick={() => navigateCustomer('customerCheckout')}
+                    onOrdersClick={() => navigateCustomer('customerOrders')}
+                    onMessagesClick={() => navigateCustomer('customerMessages')}
                     onLogout={() => setUser(null)}
                 />
             );
@@ -260,6 +414,8 @@ const App = () => {
                     onProductClick={navigateCustomerProduct}
                     onHomeClick={() => navigateCustomer('customer')}
                     onCartClick={() => navigateCustomer('customerCart')}
+                    onOrdersClick={() => navigateCustomer('customerOrders')}
+                    onMessagesClick={() => navigateCustomer('customerMessages')}
                     onLogout={() => setUser(null)}
                 />
             );
@@ -272,6 +428,8 @@ const App = () => {
                 onProductClick={navigateCustomerProduct}
                 onShopClick={() => navigateCustomer('customerShop')}
                 onCartClick={() => navigateCustomer('customerCart')}
+                onOrdersClick={() => navigateCustomer('customerOrders')}
+                onMessagesClick={() => navigateCustomer('customerMessages')}
                 onLogout={() => setUser(null)}
             />
         );
@@ -327,6 +485,8 @@ const App = () => {
                     {screen === 'categories' && <CategoriesScreen />}
                     {screen === 'customers' && <CustomersScreen />}
                     {screen === 'orders' && <Orders />}
+                    {screen === 'paymentMethods' && <PaymentMethods />}
+                    {screen === 'adminMessages' && <AdminMessages />}
                 </main>
             </div>
         </div>
@@ -729,11 +889,53 @@ function CustomersScreen() {
         }
 
         return customers.filter((customer) =>
-            [customer.name, customer.email, customer.phone, customer.city]
+            [
+                customer.first_name,
+                customer.last_name,
+                customer.name,
+                customer.email,
+                customer.phone,
+                customer.address,
+                customer.gender,
+                customer.city,
+                customer.country,
+            ]
                 .filter(Boolean)
                 .some((value) => value!.toLowerCase().includes(query)),
         );
     }, [customers, search]);
+
+    async function updateCustomerRole(
+        customer: Customer,
+        role: 'admin' | 'customer',
+    ) {
+        if (!customer.is_registered) {
+            return;
+        }
+
+        try {
+            await sendJson<{ data: Customer }>(
+                updateCustomerRoute.url(customer.id),
+                'PUT',
+                {
+                    first_name: customer.first_name ?? null,
+                    last_name: customer.last_name ?? null,
+                    name: customer.name,
+                    email: customer.email,
+                    phone: customer.phone,
+                    address: customer.address ?? null,
+                    gender: customer.gender ?? null,
+                    city: customer.city,
+                    country: customer.country,
+                    role,
+                },
+            );
+
+            await refresh(false);
+        } catch {
+            window.alert('Customer role could not be changed.');
+        }
+    }
 
     if (loading) return <FullPageMessage title="Loading customers" />;
 
@@ -779,13 +981,18 @@ function CustomersScreen() {
                 </CardHeader>
                 <CardContent>
                     <div className="overflow-x-auto">
-                        <table className="w-full min-w-250 text-sm">
+                        <table className="w-full min-w-300 text-sm">
                             <thead className="border-b text-left text-xs text-muted-foreground">
                                 <tr>
                                     <th className="pb-3 font-medium">Name</th>
                                     <th className="pb-3 font-medium">
                                         Contact
                                     </th>
+                                    <th className="pb-3 font-medium">
+                                        Address
+                                    </th>
+                                    <th className="pb-3 font-medium">Gender</th>
+                                    <th className="pb-3 font-medium">Role</th>
                                     <th className="pb-3 font-medium">
                                         Account
                                     </th>
@@ -804,7 +1011,38 @@ function CustomersScreen() {
                                 {filteredCustomers.map((customer) => (
                                     <tr key={customer.id}>
                                         <td className="py-3 font-medium">
-                                            {customer.name}
+                                            <div className="flex items-center gap-3">
+                                                <Avatar className="size-10 border">
+                                                    {customer.profile_photo_url && (
+                                                        <AvatarImage
+                                                            src={
+                                                                customer.profile_photo_url
+                                                            }
+                                                            alt={`${customer.name} profile photo`}
+                                                            className="object-cover"
+                                                        />
+                                                    )}
+                                                    <AvatarFallback>
+                                                        {customerInitials(
+                                                            customer.name,
+                                                        )}
+                                                    </AvatarFallback>
+                                                </Avatar>
+                                                <div className="min-w-0">
+                                                    <div className="truncate">
+                                                        {customer.name}
+                                                    </div>
+                                                    <div className="text-xs font-normal text-muted-foreground">
+                                                        {[
+                                                            customer.first_name,
+                                                            customer.last_name,
+                                                        ]
+                                                            .filter(Boolean)
+                                                            .join(' ') ||
+                                                            'Name details unavailable'}
+                                                    </div>
+                                                </div>
+                                            </div>
                                         </td>
                                         <td className="py-3">
                                             <div>
@@ -813,6 +1051,52 @@ function CustomersScreen() {
                                             <div className="text-xs text-muted-foreground">
                                                 {customer.phone ?? 'No phone'}
                                             </div>
+                                        </td>
+                                        <td className="max-w-64 py-3 text-muted-foreground">
+                                            <div className="line-clamp-2">
+                                                {customer.address ??
+                                                    'No address'}
+                                            </div>
+                                            <div className="text-xs">
+                                                {[
+                                                    customer.city,
+                                                    customer.country,
+                                                ]
+                                                    .filter(Boolean)
+                                                    .join(', ') ||
+                                                    'No city or country'}
+                                            </div>
+                                        </td>
+                                        <td className="py-3">
+                                            {formatCustomerGender(
+                                                customer.gender,
+                                            )}
+                                        </td>
+                                        <td className="py-3">
+                                            <select
+                                                className="h-9 rounded-md border bg-background px-2 text-sm outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50"
+                                                value={
+                                                    customer.role ?? 'customer'
+                                                }
+                                                disabled={
+                                                    !customer.is_registered
+                                                }
+                                                onChange={(event) =>
+                                                    void updateCustomerRole(
+                                                        customer,
+                                                        event.target.value as
+                                                            | 'admin'
+                                                            | 'customer',
+                                                    )
+                                                }
+                                            >
+                                                <option value="customer">
+                                                    Customer
+                                                </option>
+                                                <option value="admin">
+                                                    Admin
+                                                </option>
+                                            </select>
                                         </td>
                                         <td className="py-3">
                                             <div className="flex flex-wrap gap-2">
@@ -840,15 +1124,6 @@ function CustomersScreen() {
                                                             : 'Unverified'}
                                                     </Badge>
                                                 )}
-                                            </div>
-                                            <div className="mt-1 text-xs text-muted-foreground">
-                                                {[
-                                                    customer.city,
-                                                    customer.country,
-                                                ]
-                                                    .filter(Boolean)
-                                                    .join(', ') ||
-                                                    'No location'}
                                             </div>
                                         </td>
                                         <td className="py-3 text-right font-medium">
@@ -885,6 +1160,26 @@ function formatCustomerDate(value: string | null | undefined): string {
         day: 'numeric',
         year: 'numeric',
     }).format(new Date(value));
+}
+
+function customerInitials(name: string): string {
+    return name
+        .split(' ')
+        .filter(Boolean)
+        .slice(0, 2)
+        .map((part) => part.charAt(0).toUpperCase())
+        .join('');
+}
+
+function formatCustomerGender(value: Customer['gender']): string {
+    if (!value) {
+        return 'Not provided';
+    }
+
+    return value
+        .split('_')
+        .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(' ');
 }
 
 function OrdersScreen() {

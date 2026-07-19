@@ -14,6 +14,8 @@ type Props = {
     cartCount: number;
     onBackClick: () => void;
     onCartClick: () => void;
+    onOrdersClick: () => void;
+    onMessagesClick: () => void;
     onLogout: () => void;
 };
 
@@ -23,6 +25,8 @@ export default function CustomerProductDetail({
     cartCount,
     onBackClick,
     onCartClick,
+    onOrdersClick,
+    onMessagesClick,
     onLogout,
 }: Props) {
     const [product, setProduct] = useState<Product | null>(null);
@@ -194,6 +198,8 @@ export default function CustomerProductDetail({
                 onHomeClick={onBackClick}
                 onShopClick={onBackClick}
                 onCartClick={onCartClick}
+                onOrdersClick={onOrdersClick}
+                onMessagesClick={onMessagesClick}
                 onLogout={onLogout}
             />
 

@@ -3,6 +3,7 @@
 use App\Models\User;
 use App\Notifications\LoginSuccessfulNotification;
 use App\Notifications\VerifyEmailOtp;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Notification;
@@ -15,8 +16,14 @@ test('new users receive an email verification otp', function () {
     Notification::fake();
 
     $this->postJson(route('register.store'), [
-        'name' => 'Test User',
+        'first_name' => 'Test',
+        'last_name' => 'User',
         'email' => 'test@example.com',
+        'phone' => '+95 9 123 456 789',
+        'address' => 'Yangon',
+        'city' => 'Yangon',
+        'country' => 'Myanmar',
+        'gender' => 'female',
         'password' => 'password',
         'password_confirmation' => 'password',
     ])->assertCreated();
@@ -30,7 +37,8 @@ test('new users receive an email verification otp', function () {
     Notification::assertSentTo(
         $user,
         VerifyEmailOtp::class,
-        fn (VerifyEmailOtp $notification): bool => $user->routeNotificationFor('mail', $notification) === $user->email,
+        fn (VerifyEmailOtp $notification): bool => $notification instanceof ShouldQueue
+            && $user->routeNotificationFor('mail', $notification) === $user->email,
     );
 
     Notification::assertSentOnDemandTimes(LoginSuccessfulNotification::class, 0);
@@ -40,8 +48,14 @@ test('registered json users can load their unverified session user', function ()
     Notification::fake();
 
     $this->postJson(route('register.store'), [
-        'name' => 'Session User',
+        'first_name' => 'Session',
+        'last_name' => 'User',
         'email' => 'session@example.com',
+        'phone' => '+95 9 987 654 321',
+        'address' => 'Mandalay',
+        'city' => 'Mandalay',
+        'country' => 'Myanmar',
+        'gender' => 'prefer_not_to_say',
         'password' => 'password',
         'password_confirmation' => 'password',
     ])

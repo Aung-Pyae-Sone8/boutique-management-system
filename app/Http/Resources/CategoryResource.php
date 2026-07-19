@@ -27,6 +27,10 @@ class CategoryResource extends JsonResource
             'description' => $this->description,
             'is_active' => $this->is_active,
             'products_count' => $this->whenCounted('products'),
+            'total_products_count' => $this->when(
+                isset($this->products_count) || isset($this->children_products_count),
+                fn (): int => (int) ($this->products_count ?? 0) + (int) ($this->children_products_count ?? 0),
+            ),
             'children_count' => $this->whenCounted('children'),
             'created_at' => $this->created_at?->toISOString(),
             'updated_at' => $this->updated_at?->toISOString(),
